@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presupuesto</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #2c2c3a;
+    --ink-soft: #555568;
+    --ink-muted: #9a9ab0;
+    --accent: #8a7a5c;
+    --accent-light: #f4f1ec;
+    --line: #e6e6ee;
+    --line-soft: #f0f0f5;
+    --bg: #fafaf8;
+    --white: #ffffff;
+    --danger: #b85a5a;
+    --success: #5a8a6e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  /* TOOLBAR */
+  #toolbar {
+    background: var(--ink); padding: 12px 32px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  #toolbar span { color: #aaaacc; font-size: 13px; letter-spacing: .04em; }
+  .toolbar-btns { display: flex; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border: none; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .18s;
+  }
+  .btn-primary { background: var(--accent); color: var(--ink); }
+  .btn-primary:hover { background: #b8994e; }
+  .btn-ghost { background: rgba(255,255,255,.08); color: #ccc; border: 1px solid rgba(255,255,255,.12); }
+  .btn-ghost:hover { background: rgba(255,255,255,.14); color: #fff; }
+  .btn svg { width:15px; height:15px; }
+
+  /* PÁGINA */
+  #page {
+    max-width: 880px; margin: 36px auto 60px;
+    background: var(--white);
+    box-shadow: 0 4px 40px rgba(26,26,46,.10);
+    border-radius: 4px; overflow: hidden;
+  }
+
+  /* CABECERA */
+  #header { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 3px solid var(--accent); }
+  #logo-block { padding: 36px 36px 28px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; }
+  #logo-area {
+    width: 120px; height: 70px; border: 2px dashed var(--line); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; overflow: hidden; transition: border-color .18s;
+    position: relative;
+  }
+  #logo-area:hover { border-color: var(--accent); }
+  #logo-area.has-image { border: none; border-radius: 4px; }
+  #logo-area img { width:100%; height:100%; object-fit: contain; }
+  #logo-area.has-image .logo-remove {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(255,255,255,.95); border: 1px solid var(--line);
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 1; color: var(--ink-soft);
+    opacity: 0; transition: opacity .15s;
+  }
+  #logo-area.has-image:hover .logo-remove { opacity: 1; }
+  #logo-area.has-image .logo-remove:hover { color: var(--danger); border-color: var(--danger); }
+  .logo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-muted); font-size: 11px; text-align: center; }
+  .logo-placeholder svg { width:22px; height:22px; opacity:.5; }
+  #logo-input { display: none; }
+  .empresa-datos { display: flex; flex-direction: column; gap: 4px; }
+  .empresa-datos [contenteditable] { outline: none; }
+  .field-empresa-nombre { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--ink); }
+  .field-empresa-nombre:empty:before { content: 'Nombre Empresa / Autónomo'; color: var(--ink-muted); }
+  .field-sm { font-size: 13px; color: var(--ink-soft); }
+  .field-sm:empty:before { content: attr(data-placeholder); color: var(--ink-muted); }
+
+  #meta-block { padding: 36px 36px 28px; display: flex; flex-direction: column; justify-content: space-between; }
+  .presupuesto-titulo { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; margin-bottom: 18px; }
+  .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; }
+  .meta-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+  .meta-value {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    border-bottom: 1px solid transparent; padding: 1px 4px; border-radius: 3px;
+    outline: none; transition: all .15s; min-width: 120px;
+  }
+  .meta-value:focus { border-bottom-color: var(--accent); background: var(--accent-light); }
+  .meta-value:empty:before { content: attr(data-placeholder); color: var(--ink-muted); font-weight: 400; }
+
+  /* CLIENTE */
+  #cliente-block {
+    padding: 22px 36px; background: var(--accent-light); border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; align-items: center;
+  }
+  .cliente-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+  .cliente-value {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    border-bottom: 1px solid transparent; padding: 1px 4px; border-radius: 3px;
+    outline: none; transition: all .15s;
+  }
+  .cliente-value:focus { border-bottom-color: var(--accent); background: rgba(200,169,110,.15); }
+  .cliente-value:empty:before { content: attr(data-placeholder); color: var(--ink-muted); font-weight: 400; }
+  .cliente-nombre-val { font-size: 15px; font-weight: 600; }
+
+  /* TABLA */
+  #tabla-block { padding: 28px 36px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--ink); color: #fff; }
+  thead th { padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  thead th.right { text-align: right; }
+  thead th.center { text-align: center; }
+  tbody td { padding: 0; vertical-align: top; }
+
+  /* FILA ITEM */
+  tbody tr.row-item { border-bottom: 1px solid var(--line); }
+  tbody tr.row-item:hover { background: #fafafa; }
+  .td-inner { padding: 10px 12px; display: flex; align-items: flex-start; }
+  .td-inner.center { justify-content: center; }
+  .td-inner.right { justify-content: flex-end; }
+  .cell-edit {
+    outline: none; width: 100%; min-height: 20px; padding: 2px 4px;
+    border-radius: 3px; border: 1px solid transparent; background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink);
+    transition: all .15s; resize: none;
+  }
+  .cell-edit:focus { border-color: var(--accent); background: var(--accent-light); }
+  .cell-edit::placeholder { color: var(--ink-muted); }
+  textarea.cell-edit { min-height: 38px; line-height: 1.5; }
+  .qty-wrap { display: flex; gap: 4px; align-items: flex-start; }
+  .qty-num { width: 52px; text-align: right; }
+  .qty-unit { width: 46px; text-align: center; }
+  .price-cell { width: 110px; text-align: right; }
+  .discount-cell { width: 68px; text-align: right; }
+  .row-total { color: var(--ink); font-weight: 600; }
+  .row-total.has-discount { color: var(--success); }
+  .del-btn {
+    background: none; border: none; cursor: pointer; color: var(--ink-muted);
+    padding: 2px 4px; border-radius: 4px; font-size: 16px; line-height: 1; transition: all .15s;
+  }
+  .del-btn:hover { color: var(--danger); background: #fdeaea; }
+
+  /* FILA CAPÍTULO */
+  tbody tr.row-chapter td { padding: 0; background: var(--ink); }
+  .chapter-inner { display: flex; align-items: center; gap: 10px; padding: 9px 12px; }
+  .chapter-title-edit {
+    flex: 1; outline: none; background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: #fff; border: none; border-bottom: 1px solid transparent; padding: 1px 4px; transition: all .15s;
+    letter-spacing: .02em;
+  }
+  .chapter-title-edit:focus { border-bottom-color: var(--accent); }
+  .chapter-title-edit::placeholder { color: rgba(255,255,255,.4); }
+  .chapter-add-btn {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    color: rgba(255,255,255,.8); font-family: 'DM Sans', sans-serif;
+    font-size: 11px; padding: 3px 10px; border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .chapter-add-btn:hover { background: rgba(138,122,92,.4); border-color: var(--accent); color: var(--accent); }
+  .chapter-del {
+    background: none; border: none; cursor: pointer; color: rgba(255,255,255,.35);
+    font-size: 18px; padding: 0 4px; line-height:1; transition: color .15s; flex-shrink: 0;
+  }
+  .chapter-del:hover { color: #ff8080; }
+
+  /* MODO "SIN CAPÍTULOS": cuando solo hay 1 capítulo, ocultar su cabecera y subtotal */
+  tbody.single-chapter tr.row-chapter,
+  tbody.single-chapter tr.row-chapter-sub { display: none; }
+
+  /* FILA SUBTOTAL CAPÍTULO */
+  tbody tr.row-chapter-sub { background: #f4f4fa; border-bottom: 2px solid var(--line); }
+  tbody tr.row-chapter-sub td { padding: 9px 12px; }
+  .sub-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); text-align: left; }
+  .sub-label .sub-name { color: var(--ink-soft); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .sub-value { font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; }
+
+  /* BOTÓN AÑADIR CAPÍTULO (global) */
+  .add-btns { display: flex; gap: 10px; margin: 14px 0 28px; }
+  .add-btn {
+    display: inline-flex; align-items: center; gap: 6px; flex: 1; justify-content: center;
+    background: none; border: 1.5px solid var(--line); color: var(--ink-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 9px 18px; border-radius: 6px;
+    cursor: pointer; transition: all .18s;
+  }
+  .add-btn:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+
+  /* TOTALES */
+  #totales-block { padding: 0 36px 32px; display: flex; justify-content: flex-end; }
+  .totales-table { width: 300px; }
+  .totales-table tr td { padding: 5px 8px; font-size: 13px; }
+  .totales-table .t-label { color: var(--ink-soft); }
+  .totales-table .t-value { text-align: right; font-weight: 500; }
+  .totales-table .t-discount { color: var(--success); }
+  .totales-table .t-sep td { border-top: 2px solid var(--ink); padding-top: 10px; }
+  .totales-table .t-total td { font-size: 16px; font-weight: 700; font-family: 'Playfair Display', serif; }
+  .iva-selector {
+    background: none; border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: var(--ink-soft); cursor: pointer;
+    padding: 0 14px 0 0; outline: none;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%234a4a6a' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 8px;
+  }
+  .iva-selector:hover { color: var(--ink); }
+
+  /* CONDICIONES */
+  #condiciones-block { padding: 26px 36px 32px; border-top: 1px solid var(--line); }
+  .cond-titulo { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  .cond-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; }
+  .cond-group { display: flex; flex-direction: column; gap: 7px; }
+  .cond-group.full { grid-column: 1 / -1; }
+  .cond-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+  .cond-input {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px;
+    outline: none; transition: border-color .15s; background: var(--white); width: 100%;
+  }
+  .cond-input:focus { border-color: var(--accent); background: var(--accent-light); }
+  .cond-input::placeholder { color: var(--ink-muted); }
+  textarea.cond-input { resize: vertical; min-height: 62px; line-height: 1.6; }
+
+  /* PAGOS */
+  .pagos-rows { display: flex; flex-direction: column; gap: 8px; }
+  .pago-row { display: flex; gap: 8px; align-items: center; }
+  .pago-pct { width: 70px; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 7px 8px; outline: none; transition: border-color .15s; background: var(--white); }
+  .pago-pct:focus { border-color: var(--accent); background: var(--accent-light); }
+  .pago-desc { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 7px 10px; outline: none; transition: border-color .15s; background: var(--white); }
+  .pago-desc:focus { border-color: var(--accent); background: var(--accent-light); }
+  .pago-desc::placeholder { color: var(--ink-muted); }
+  .pago-del { background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 18px; line-height:1; padding: 0 3px; transition: color .15s; }
+  .pago-del:hover { color: var(--danger); }
+  .pct-sym { font-size: 13px; color: var(--ink-muted); flex-shrink: 0; }
+  .add-pago-btn {
+    display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+    background: none; border: 1.5px dashed var(--line); color: var(--ink-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 6px 14px; border-radius: 5px;
+    cursor: pointer; transition: all .18s; margin-top: 2px;
+  }
+  .add-pago-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* PIE */
+  #footer-block {
+    padding: 20px 36px 28px; border-top: 3px solid var(--accent);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .firma-box { display: flex; flex-direction: column; gap: 6px; }
+  .firma-titulo { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
+  .firma-linea { border-bottom: 1px solid var(--ink-muted); height: 48px; margin-bottom: 4px; }
+  .firma-sub { font-size: 11px; color: var(--ink-muted); }
+
+  /* ── MODAL CARGAR JSON ── */
+  #json-modal {
+    position: fixed; inset: 0;
+    background: rgba(44, 44, 58, 0.55);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(2px);
+  }
+  .json-modal-content {
+    background: var(--white);
+    border-radius: 8px;
+    width: 100%; max-width: 640px;
+    max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+  .json-modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .json-modal-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; font-weight: 600; color: var(--ink);
+  }
+  .json-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-muted); font-size: 22px; line-height: 1;
+    padding: 0 4px; transition: color .15s;
+  }
+  .json-modal-close:hover { color: var(--ink); }
+  .json-modal-help {
+    padding: 14px 24px 8px;
+    font-size: 12.5px; color: var(--ink-soft); line-height: 1.5;
+  }
+  .json-modal-help code {
+    background: var(--line-soft); padding: 1px 5px;
+    border-radius: 3px; font-size: 11.5px;
+    font-family: 'Courier New', monospace; color: var(--ink);
+  }
+  .json-modal-example {
+    margin: 0 24px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--line-soft);
+  }
+  .json-modal-example summary {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    user-select: none;
+  }
+  .json-modal-example summary:hover { color: var(--ink); }
+  .json-modal-example pre {
+    padding: 0 14px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px; color: var(--ink);
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0;
+  }
+  .json-modal-example .json-modal-help { padding: 0 14px 12px; }
+  #json-input {
+    margin: 4px 24px 0;
+    flex: 1; min-height: 200px;
+    border: 1px solid var(--line); border-radius: 5px;
+    padding: 12px;
+    font-family: 'Courier New', monospace; font-size: 12px;
+    color: var(--ink);
+    outline: none; resize: vertical;
+    background: var(--line-soft);
+  }
+  #json-input:focus { border-color: var(--accent); background: var(--white); }
+  #json-error {
+    margin: 8px 24px 0;
+    padding: 8px 12px;
+    background: #fdf0f0; color: var(--danger);
+    border: 1px solid #f5d0d0; border-radius: 4px;
+    font-size: 12px; display: none;
+  }
+  #json-error.visible { display: block; }
+  .json-modal-actions {
+    padding: 16px 24px;
+    display: flex; justify-content: flex-end; gap: 10px;
+    border-top: 1px solid var(--line);
+    background: var(--line-soft);
+  }
+  .json-modal-actions .btn-ghost {
+    background: var(--white); color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+  .json-modal-actions .btn-ghost:hover {
+    background: var(--line-soft); color: var(--ink); border-color: var(--ink-muted);
+  }
+
+  /* PRINT */
+  @media print {
+    @page {
+      margin: 12mm 11mm 14mm 11mm;
+      size: A4;
+    }
+    @page {
+      @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 9pt;
+        color: #888;
+      }
+    }
+    html, body {
+      background: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #toolbar { display: none !important; }
+    #json-modal { display: none !important; }
+    #page {
+      max-width: 100%; margin: 0; box-shadow: none; border-radius: 0;
+    }
+
+    /* Ocultar controles de edición */
+    .del-btn, .chapter-del, .chapter-add-btn, .pago-del, .add-btns, .add-pago-btn { display: none !important; }
+    /* Ocultar la última columna (botones eliminar) */
+    table thead th:last-child, table tbody td:last-child { display: none !important; }
+
+    /* Inputs sin bordes */
+    .cell-edit { border: none !important; background: transparent !important; padding: 0 !important; }
+    .chapter-title-edit { border: none !important; }
+    .cond-input { border: 1px solid #ddd !important; background: transparent !important; }
+    .pago-pct, .pago-desc { border: 1px solid #ddd !important; background: transparent !important; }
+
+    /* Selector IVA sin flecha en print */
+    .iva-selector {
+      pointer-events: none;
+      background-image: none !important;
+      padding: 0 !important;
+      color: var(--ink-soft) !important;
+    }
+
+    tbody tr.row-item:hover { background: transparent !important; }
+
+    /* ── SALTOS DE PÁGINA INTELIGENTES ── */
+    /* Que un capítulo intente mantenerse junto cuando es posible */
+    tr.row-chapter, tr.row-chapter-sub, tr.row-item {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    /* La cabecera de capítulo nunca debe quedar huérfana al final de página */
+    tr.row-chapter {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    /* El subtotal de capítulo no debe separarse de su última línea */
+    tr.row-chapter-sub {
+      page-break-before: avoid;
+      break-before: avoid;
+    }
+    /* La cabecera de la tabla se repite en cada página */
+    table thead { display: table-header-group; }
+    table tfoot { display: table-footer-group; }
+
+    /* Bloques que deben mantenerse enteros */
+    #totales-block,
+    #condiciones-block .cond-group,
+    #footer-block,
+    .firma-box,
+    .pago-row {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* ── CABECERA DE CAPÍTULO EN PRINT ──
+       Estrategia simple y a prueba de fallos:
+       Ocultamos la cabecera oscura (que da problemas en algunos navegadores)
+       y dejamos que el subtotal del capítulo identifique cada bloque,
+       ya que el subtotal incluye el nombre del capítulo. */
+    tbody tr.row-chapter { display: none !important; }
+
+    /* Subtotal del capítulo: línea destacada con el nombre del capítulo + total */
+    tbody tr.row-chapter-sub {
+      background: #f0f0f5 !important;
+      border-top: 1.5px solid var(--ink-soft) !important;
+      border-bottom: 1.5px solid var(--ink-soft) !important;
+    }
+    tbody tr.row-chapter-sub td {
+      padding: 9px 12px !important;
+    }
+    .sub-label, .sub-value { color: var(--ink) !important; font-weight: 700 !important; }
+    .sub-label .sub-name { color: var(--ink-soft) !important; font-weight: 600 !important; }
+
+    /* Cabecera de la tabla en print */
+    thead tr {
+      background: var(--ink) !important;
+      color: #fff !important;
+    }
+    thead th { color: #fff !important; }
+
+    #cliente-block {
+      background: var(--accent-light) !important;
+      border-top: 1px solid var(--line) !important;
+      border-bottom: 1px solid var(--line) !important;
+    }
+
+    /* Bordes de acento sobrios */
+    #header { border-bottom: 2px solid var(--ink-soft) !important; }
+    #footer-block { border-top: 2px solid var(--ink-soft) !important; }
+    .cond-titulo { border-bottom: 1.5px solid var(--ink-soft) !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <span>✦ Plantilla de Presupuesto — edita directamente en la página</span>
+  <div class="toolbar-btns">
+    <button class="btn btn-ghost" id="btn-cargar-json">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Cargar JSON
+    </button>
+    <button class="btn btn-ghost" id="btn-limpiar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+      Nueva plantilla
+    </button>
+    <button class="btn btn-primary" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Exportar PDF
+    </button>
+  </div>
+</div>
+
+<!-- MODAL CARGAR JSON -->
+<div id="json-modal" style="display:none">
+  <div class="json-modal-content">
+    <div class="json-modal-header">
+      <h3>Cargar capítulos desde JSON</h3>
+      <button class="json-modal-close" id="btn-cerrar-modal">&times;</button>
+    </div>
+    <p class="json-modal-help">Pega aquí el JSON con los capítulos y sus líneas. Solo se cargarán los capítulos y trabajos — el resto de campos del presupuesto los rellenas tú manualmente.</p>
+    <details class="json-modal-example">
+      <summary>Ver formato esperado</summary>
+      <pre>{
+  "capitulos": [
+    {
+      "titulo": "Cocina",
+      "lineas": [
+        { "cantidad": 12, "unidad": "M2", "concepto": "Demolición de alicatado", "precio": 25, "descuento": 0 },
+        { "cantidad": 1, "unidad": "UD", "concepto": "Encimera de granito", "precio": 850, "descuento": 10 }
+      ]
+    },
+    {
+      "titulo": "Baño",
+      "lineas": [
+        { "cantidad": 8, "unidad": "M2", "concepto": "Solado nuevo", "precio": 35 }
+      ]
+    }
+  ]
+}</pre>
+      <p class="json-modal-help"><strong>Notas:</strong> Todos los campos son opcionales. Si <code>cantidad</code> está vacía solo se cobra <code>precio</code>. <code>descuento</code> en porcentaje (0-100). Si solo hay <strong>1 capítulo</strong>, su cabecera se oculta automáticamente.</p>
+    </details>
+    <textarea id="json-input" placeholder='{"capitulos": [...]}'></textarea>
+    <div id="json-error"></div>
+    <div class="json-modal-actions">
+      <button class="btn btn-ghost" id="btn-cancelar-json">Cancelar</button>
+      <button class="btn btn-primary" id="btn-aplicar-json">Cargar capítulos</button>
+    </div>
+  </div>
+</div>
+
+<!-- PÁGINA -->
+<div id="page">
+
+  <!-- CABECERA -->
+  <div id="header">
+    <div id="logo-block">
+      <div id="logo-area" onclick="document.getElementById('logo-input').click()" title="Haz clic para subir logo">
+        <div class="logo-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span>Subir logo</span>
+        </div>
+      </div>
+      <input type="file" id="logo-input" accept="image/*">
+      <div class="empresa-datos">
+        <div class="field-empresa-nombre" contenteditable="true" spellcheck="false">Nombre Empresa</div>
+        <div class="field-sm" contenteditable="true" spellcheck="false" data-placeholder="Dirección completa">Calle Ejemplo, 12 · 28001 Madrid</div>
+        <div class="field-sm" contenteditable="true" spellcheck="false" data-placeholder="NIF/CIF">NIF: B12345678</div>
+        <div class="field-sm" contenteditable="true" spellcheck="false" data-placeholder="Teléfono y email">Tel: 600 000 000 · info@empresa.com</div>
+        <div class="field-sm" contenteditable="true" spellcheck="false" data-placeholder="Web">www.empresa.com</div>
+      </div>
+    </div>
+    <div id="meta-block">
+      <div class="presupuesto-titulo">PRESUPUESTO</div>
+      <div class="meta-grid">
+        <span class="meta-label">Nº Ref.</span>
+        <span class="meta-value" contenteditable="true" spellcheck="false" data-placeholder="PRE-2024-001">PRE-2024-001</span>
+        <span class="meta-label">Fecha</span>
+        <span class="meta-value" id="fecha-valor" contenteditable="true" spellcheck="false" data-placeholder="dd/mm/aaaa"></span>
+        <span class="meta-label">Referencia obra</span>
+        <span class="meta-value" contenteditable="true" spellcheck="false" data-placeholder="Nombre / descripción de la obra"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENTE -->
+  <div id="cliente-block">
+    <span class="cliente-label">Cliente</span>
+    <span class="cliente-value cliente-nombre-val" contenteditable="true" spellcheck="false" data-placeholder="Nombre o razón social del cliente">Nombre del Cliente</span>
+    <span class="cliente-label">Dirección obra</span>
+    <span class="cliente-value" contenteditable="true" spellcheck="false" data-placeholder="Dirección de la obra">Calle, número · Ciudad</span>
+    <span class="cliente-label">NIF/CIF</span>
+    <span class="cliente-value" contenteditable="true" spellcheck="false" data-placeholder="NIF/CIF cliente"></span>
+    <span class="cliente-label">Contacto</span>
+    <span class="cliente-value" contenteditable="true" spellcheck="false" data-placeholder="Email / teléfono"></span>
+  </div>
+
+  <!-- TABLA -->
+  <div id="tabla-block">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:132px">Cantidad</th>
+          <th>Concepto</th>
+          <th class="right" style="width:110px">Precio unit.</th>
+          <th class="center" style="width:72px">Dto. %</th>
+          <th class="right" style="width:100px">Total</th>
+          <th style="width:36px"></th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+    <div class="add-btns">
+      <button class="add-btn" id="btn-add-line" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Añadir línea
+      </button>
+      <button class="add-btn" id="btn-add-chapter">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Añadir capítulo
+      </button>
+    </div>
+  </div>
+
+  <!-- TOTALES -->
+  <div id="totales-block">
+    <table class="totales-table">
+      <tbody>
+        <tr>
+          <td class="t-label">Base imponible</td>
+          <td class="t-value" id="val-subtotal">0,00 €</td>
+        </tr>
+        <tr id="row-descuento" style="display:none">
+          <td class="t-label t-discount">Descuento total</td>
+          <td class="t-value t-discount" id="val-descuento">0,00 €</td>
+        </tr>
+        <tr id="row-base-neta" style="display:none">
+          <td class="t-label">Base neta</td>
+          <td class="t-value" id="val-base-neta">0,00 €</td>
+        </tr>
+        <tr>
+          <td class="t-label">IVA
+            <select class="iva-selector" id="iva-select">
+              <option value="0">0%</option>
+              <option value="4">4%</option>
+              <option value="10">10%</option>
+              <option value="21" selected>21%</option>
+            </select>
+          </td>
+          <td class="t-value" id="val-iva">0,00 €</td>
+        </tr>
+        <tr class="t-sep t-total">
+          <td class="t-label">TOTAL</td>
+          <td class="t-value" id="val-total">0,00 €</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CONDICIONES -->
+  <div id="condiciones-block">
+    <div class="cond-titulo">Condiciones del presupuesto</div>
+    <div class="cond-grid">
+
+      <div class="cond-group">
+        <div class="cond-label">Plazo de ejecución</div>
+        <input type="text" class="cond-input" id="plazo-input">
+      </div>
+
+      <div class="cond-group">
+        <div class="cond-label">Validez del presupuesto</div>
+        <input type="text" class="cond-input" id="validez-input" value="30 días desde la fecha de emisión">
+      </div>
+
+      <div class="cond-group full">
+        <div class="cond-label">Forma de pago</div>
+        <div class="pagos-rows" id="pagos-rows"></div>
+        <button class="add-pago-btn" id="btn-add-pago">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Añadir hito de pago
+        </button>
+      </div>
+
+      <div class="cond-group full">
+        <div class="cond-label">Observaciones</div>
+        <textarea class="cond-input" id="notas-text" placeholder="Garantías, condiciones de materiales, gestión de residuos, observaciones adicionales..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FIRMAS -->
+  <div id="footer-block">
+    <div class="firma-box">
+      <div class="firma-titulo">El cliente acepta el presupuesto</div>
+      <div class="firma-linea"></div>
+      <div class="firma-sub">Nombre, fecha y firma del cliente</div>
+    </div>
+    <div class="firma-box">
+      <div class="firma-titulo">Firma y sello de la empresa</div>
+      <div class="firma-linea"></div>
+      <div class="firma-sub">Nombre, fecha y firma</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+(function () {
+  'use strict';
+
+  let rowId = 0;
+  let chapterId = 0;
+  let pagoId = 0;
+
+  /* ── UTILIDADES ── */
+  function fmt(n) {
+    return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+
+  function getEl(id) { return document.getElementById(id); }
+
+  /* ── INIT ── */
+  document.addEventListener('DOMContentLoaded', function () {
+    // Fecha de hoy
+    var h = new Date();
+    getEl('fecha-valor').textContent =
+      String(h.getDate()).padStart(2,'0') + '/' +
+      String(h.getMonth()+1).padStart(2,'0') + '/' +
+      h.getFullYear();
+
+    // Logo
+    getEl('logo-input').addEventListener('change', cargarLogo);
+
+    // IVA
+    getEl('iva-select').addEventListener('change', calcularTotales);
+
+    // Botones globales
+    getEl('btn-add-chapter').addEventListener('click', function () { addChapter(); });
+    getEl('btn-add-line').addEventListener('click', function () {
+      // En modo single-chapter, añadir al primer (único) capítulo
+      var firstCap = getEl('tabla-body').querySelector('tr.row-chapter');
+      if (firstCap) addRow(firstCap.getAttribute('data-cid'));
+    });
+    getEl('btn-limpiar').addEventListener('click', limpiarFormulario);
+    getEl('btn-add-pago').addEventListener('click', function () { addPago(); });
+
+    // Modal cargar JSON
+    getEl('btn-cargar-json').addEventListener('click', abrirModalJSON);
+    getEl('btn-cerrar-modal').addEventListener('click', cerrarModalJSON);
+    getEl('btn-cancelar-json').addEventListener('click', cerrarModalJSON);
+    getEl('btn-aplicar-json').addEventListener('click', aplicarJSON);
+    // Cerrar modal al pulsar fuera del contenido
+    getEl('json-modal').addEventListener('click', function (e) {
+      if (e.target.id === 'json-modal') cerrarModalJSON();
+    });
+
+    // Estructura inicial: un solo capítulo (oculto automáticamente al ser único)
+    addChapter('');
+    addRow(1); addRow(1); addRow(1);
+
+    // Pagos por defecto
+    addPago('30', 'A la firma del contrato');
+    addPago('40', 'A mitad de obra');
+    addPago('30', 'A la entrega y recepción de la obra');
+  });
+
+  /* ── LOGO ── */
+  function cargarLogo(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var area = getEl('logo-area');
+      area.innerHTML = '';
+      area.classList.add('has-image');
+
+      var img = document.createElement('img');
+      img.src = ev.target.result;
+      img.alt = 'Logo';
+      area.appendChild(img);
+
+      var rmBtn = document.createElement('button');
+      rmBtn.className = 'logo-remove';
+      rmBtn.title = 'Quitar logo';
+      rmBtn.innerHTML = '&times;';
+      rmBtn.addEventListener('click', function (ev2) {
+        ev2.stopPropagation();
+        quitarLogo();
+      });
+      area.appendChild(rmBtn);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function quitarLogo() {
+    var area = getEl('logo-area');
+    area.classList.remove('has-image');
+    area.innerHTML = '<div class="logo-placeholder">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>' +
+      '<span>Subir logo</span>' +
+    '</div>';
+    getEl('logo-input').value = '';
+  }
+
+  /* ── CAPÍTULO ── */
+  function addChapter(titulo) {
+    chapterId++;
+    var cid = chapterId;
+    var tbody = getEl('tabla-body');
+
+    // — Fila cabecera del capítulo (solo visible en pantalla, no en print) —
+    var trCap = document.createElement('tr');
+    trCap.className = 'row-chapter';
+    trCap.setAttribute('data-cid', cid);
+
+    var td = document.createElement('td');
+    td.colSpan = 6;
+
+    var inner = document.createElement('div');
+    inner.className = 'chapter-inner';
+
+    var titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.className = 'chapter-title-edit';
+    titleInput.placeholder = 'Título del capítulo…';
+    titleInput.value = titulo || '';
+
+    var addLineBtn = document.createElement('button');
+    addLineBtn.className = 'chapter-add-btn no-print';
+    addLineBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> Añadir línea';
+    (function (capturedCid) {
+      addLineBtn.addEventListener('click', function () { addRow(capturedCid); });
+    })(cid);
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'chapter-del no-print';
+    delBtn.title = 'Eliminar capítulo';
+    delBtn.innerHTML = '&times;';
+    (function (capturedCid) {
+      delBtn.addEventListener('click', function () { delChapter(capturedCid); });
+    })(cid);
+
+    inner.appendChild(titleInput);
+    inner.appendChild(addLineBtn);
+    inner.appendChild(delBtn);
+    td.appendChild(inner);
+    trCap.appendChild(td);
+    tbody.appendChild(trCap);
+
+    // — Fila subtotal del capítulo (con nombre del capítulo) —
+    var trSub = document.createElement('tr');
+    trSub.className = 'row-chapter-sub';
+    trSub.id = 'chapter-sub-' + cid;
+    trSub.setAttribute('data-cid', cid);
+
+    var tdLabel = document.createElement('td');
+    tdLabel.colSpan = 4;
+    tdLabel.className = 'sub-label';
+
+    var subText = document.createTextNode('Subtotal');
+    var subName = document.createElement('span');
+    subName.className = 'sub-name';
+    subName.id = 'chapter-sub-name-' + cid;
+    subName.textContent = titulo ? ' — ' + titulo : '';
+
+    tdLabel.appendChild(subText);
+    tdLabel.appendChild(subName);
+
+    var tdVal = document.createElement('td');
+    tdVal.className = 'sub-value';
+    tdVal.id = 'chapter-sub-val-' + cid;
+    tdVal.textContent = '0,00 €';
+
+    var tdEmpty = document.createElement('td');
+
+    trSub.appendChild(tdLabel);
+    trSub.appendChild(tdVal);
+    trSub.appendChild(tdEmpty);
+    tbody.appendChild(trSub);
+
+    // Sincronizar el nombre del capítulo en el subtotal al escribir
+    titleInput.addEventListener('input', function () {
+      var v = titleInput.value.trim();
+      subName.textContent = v ? ' — ' + v : '';
+    });
+
+    actualizarModoCapitulos();
+  }
+
+  function delChapter(cid) {
+    var tbody = getEl('tabla-body');
+    var totalCaps = tbody.querySelectorAll('tr.row-chapter').length;
+
+    // No permitir eliminar el último capítulo (siempre debe haber al menos 1, aunque esté oculto)
+    if (totalCaps <= 1) {
+      alert('No se puede eliminar el único capítulo. Elimina las líneas individualmente o pulsa "Nueva plantilla".');
+      return;
+    }
+
+    if (!confirm('¿Eliminar este capítulo y todas sus líneas?')) return;
+
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    var capRow = null, subRow = null;
+    rows.forEach(function (r) {
+      if (r.classList.contains('row-chapter') && r.getAttribute('data-cid') == cid) capRow = r;
+      if (r.classList.contains('row-chapter-sub') && r.getAttribute('data-cid') == cid) subRow = r;
+    });
+
+    if (!capRow || !subRow) return;
+
+    var capIdx = rows.indexOf(capRow);
+    var subIdx = rows.indexOf(subRow);
+
+    for (var i = capIdx; i <= subIdx; i++) {
+      if (rows[i] && rows[i].parentNode) rows[i].parentNode.removeChild(rows[i]);
+    }
+
+    actualizarModoCapitulos();
+    calcularTotales();
+  }
+
+  /* ── MODO CAPÍTULOS ──
+     Si solo hay 1 capítulo, ocultar su cabecera y subtotal automáticamente
+     y mostrar el botón global "Añadir línea".
+     Si hay 2 o más, mostrar capítulos y ocultar el botón global. */
+  function actualizarModoCapitulos() {
+    var tbody = getEl('tabla-body');
+    var totalCaps = tbody.querySelectorAll('tr.row-chapter').length;
+    var btnLine = getEl('btn-add-line');
+    if (totalCaps <= 1) {
+      tbody.classList.add('single-chapter');
+      if (btnLine) btnLine.style.display = '';
+    } else {
+      tbody.classList.remove('single-chapter');
+      if (btnLine) btnLine.style.display = 'none';
+    }
+  }
+
+  /* ── FILA ITEM ── */
+  function addRow(targetCid) {
+    rowId++;
+    var id = rowId;
+    var tbody = getEl('tabla-body');
+    var tr = document.createElement('tr');
+    tr.className = 'row-item';
+    tr.id = 'row-' + id;
+    tr.setAttribute('data-row-id', id);
+
+    // Celda CANTIDAD
+    var tdQty = document.createElement('td');
+    var divQty = document.createElement('div'); divQty.className = 'td-inner';
+    var qtyWrap = document.createElement('div'); qtyWrap.className = 'qty-wrap';
+    var qtyNum = document.createElement('input');
+    qtyNum.type = 'number'; qtyNum.min = '0'; qtyNum.step = 'any';
+    qtyNum.className = 'cell-edit qty-num'; qtyNum.placeholder = '0'; qtyNum.id = 'qty-' + id;
+    qtyNum.addEventListener('input', function () { calcularFila(id); });
+    var qtyUnit = document.createElement('input');
+    qtyUnit.type = 'text'; qtyUnit.className = 'cell-edit qty-unit';
+    qtyUnit.placeholder = 'M2'; qtyUnit.maxLength = 4; qtyUnit.id = 'unit-' + id;
+    qtyWrap.appendChild(qtyNum); qtyWrap.appendChild(qtyUnit);
+    divQty.appendChild(qtyWrap); tdQty.appendChild(divQty);
+
+    // Celda CONCEPTO
+    var tdCon = document.createElement('td');
+    var divCon = document.createElement('div'); divCon.className = 'td-inner';
+    var textarea = document.createElement('textarea');
+    textarea.className = 'cell-edit'; textarea.rows = 2;
+    textarea.placeholder = 'Descripción del trabajo o servicio…'; textarea.id = 'concepto-' + id;
+    divCon.appendChild(textarea); tdCon.appendChild(divCon);
+
+    // Celda PRECIO
+    var tdPre = document.createElement('td');
+    var divPre = document.createElement('div'); divPre.className = 'td-inner right';
+    var precioInput = document.createElement('input');
+    precioInput.type = 'number'; precioInput.min = '0'; precioInput.step = 'any';
+    precioInput.className = 'cell-edit price-cell'; precioInput.placeholder = '0,00'; precioInput.id = 'precio-' + id;
+    precioInput.addEventListener('input', function () { calcularFila(id); });
+    divPre.appendChild(precioInput); tdPre.appendChild(divPre);
+
+    // Celda DTO
+    var tdDto = document.createElement('td');
+    var divDto = document.createElement('div'); divDto.className = 'td-inner center';
+    var dtoInput = document.createElement('input');
+    dtoInput.type = 'number'; dtoInput.min = '0'; dtoInput.max = '100'; dtoInput.step = 'any';
+    dtoInput.className = 'cell-edit discount-cell'; dtoInput.placeholder = '0'; dtoInput.id = 'dto-' + id;
+    dtoInput.addEventListener('input', function () { calcularFila(id); });
+    divDto.appendChild(dtoInput); tdDto.appendChild(divDto);
+
+    // Celda TOTAL
+    var tdTot = document.createElement('td');
+    var divTot = document.createElement('div'); divTot.className = 'td-inner right';
+    var totSpan = document.createElement('span');
+    totSpan.className = 'row-total'; totSpan.id = 'total-' + id; totSpan.textContent = '—';
+    divTot.appendChild(totSpan); tdTot.appendChild(divTot);
+
+    // Celda DEL
+    var tdDel = document.createElement('td');
+    var divDel = document.createElement('div'); divDel.className = 'td-inner center';
+    var delBtn = document.createElement('button');
+    delBtn.className = 'del-btn'; delBtn.title = 'Eliminar línea'; delBtn.innerHTML = '&times;';
+    delBtn.addEventListener('click', function () { delRow(id); });
+    divDel.appendChild(delBtn); tdDel.appendChild(divDel);
+
+    tr.appendChild(tdQty); tr.appendChild(tdCon); tr.appendChild(tdPre);
+    tr.appendChild(tdDto); tr.appendChild(tdTot); tr.appendChild(tdDel);
+
+    // Insertar ANTES del subtotal del capítulo destino
+    if (targetCid) {
+      var subRow = getEl('chapter-sub-' + targetCid);
+      if (subRow && subRow.parentNode === tbody) {
+        tbody.insertBefore(tr, subRow);
+        return;
+      }
+    }
+    // Sin capítulo destino: añadir al final
+    tbody.appendChild(tr);
+  }
+
+  function delRow(id) {
+    var tr = getEl('row-' + id);
+    if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
+    calcularTotales();
+  }
+
+  /* ── CÁLCULO FILA ── */
+  function calcularFila(id) {
+    var qty    = parseFloat((getEl('qty-' + id) || {}).value) || 0;
+    var precio = parseFloat((getEl('precio-' + id) || {}).value) || 0;
+    var dto    = parseFloat((getEl('dto-' + id) || {}).value) || 0;
+    var el     = getEl('total-' + id);
+    if (!el) return;
+    if (precio > 0) {
+      var t = qty > 0 ? qty * precio : precio;
+      if (dto > 0) t *= (1 - dto / 100);
+      el.textContent = fmt(t);
+      el.classList.toggle('has-discount', dto > 0);
+    } else {
+      el.textContent = '—';
+      el.classList.remove('has-discount');
+    }
+    calcularTotales();
+  }
+
+  /* ── CÁLCULO TOTALES ── */
+  function calcularTotales() {
+    var tbody = getEl('tabla-body');
+    var rows  = Array.from(tbody.querySelectorAll('tr'));
+    var baseSum = 0, descSum = 0;
+
+    // Subtotales por capítulo
+    tbody.querySelectorAll('tr.row-chapter').forEach(function (capRow) {
+      var cid    = capRow.getAttribute('data-cid');
+      var subRow = getEl('chapter-sub-' + cid);
+      if (!subRow) return;
+      var capIdx = rows.indexOf(capRow);
+      var subIdx = rows.indexOf(subRow);
+      var chapTotal = 0;
+      for (var i = capIdx + 1; i < subIdx; i++) {
+        var r = rows[i];
+        if (!r.classList.contains('row-item')) continue;
+        var rid    = r.getAttribute('data-row-id');
+        var qty    = parseFloat((getEl('qty-' + rid) || {}).value) || 0;
+        var precio = parseFloat((getEl('precio-' + rid) || {}).value) || 0;
+        var dto    = parseFloat((getEl('dto-' + rid) || {}).value) || 0;
+        if (precio > 0) {
+          var t = qty > 0 ? qty * precio : precio;
+          if (dto > 0) t *= (1 - dto / 100);
+          chapTotal += t;
+        }
+      }
+      var valEl = getEl('chapter-sub-val-' + cid);
+      if (valEl) valEl.textContent = fmt(chapTotal);
+    });
+
+    // Total global
+    rows.filter(function (r) { return r.classList.contains('row-item'); }).forEach(function (r) {
+      var rid    = r.getAttribute('data-row-id');
+      var qty    = parseFloat((getEl('qty-' + rid) || {}).value) || 0;
+      var precio = parseFloat((getEl('precio-' + rid) || {}).value) || 0;
+      var dto    = parseFloat((getEl('dto-' + rid) || {}).value) || 0;
+      if (precio > 0) {
+        var bruto = qty > 0 ? qty * precio : precio;
+        baseSum += bruto;
+        if (dto > 0) descSum += bruto * (dto / 100);
+      }
+    });
+
+    var baseNeta = baseSum - descSum;
+    var ivaPct   = parseFloat(getEl('iva-select').value) || 0;
+    var ivaAmt   = baseNeta * ivaPct / 100;
+
+    getEl('val-subtotal').textContent = fmt(baseSum);
+    getEl('val-iva').textContent      = fmt(ivaAmt);
+    getEl('val-total').textContent    = fmt(baseNeta + ivaAmt);
+
+    var showDesc = descSum > 0;
+    getEl('row-descuento').style.display = showDesc ? '' : 'none';
+    getEl('row-base-neta').style.display = showDesc ? '' : 'none';
+    if (showDesc) {
+      getEl('val-descuento').textContent = '- ' + fmt(descSum);
+      getEl('val-base-neta').textContent = fmt(baseNeta);
+    }
+  }
+
+  /* ── PAGOS ── */
+  function addPago(pct, desc) {
+    pagoId++;
+    var pid = pagoId;
+    var container = getEl('pagos-rows');
+
+    var div = document.createElement('div');
+    div.className = 'pago-row';
+    div.id = 'pago-' + pid;
+
+    var pctInput = document.createElement('input');
+    pctInput.type = 'number'; pctInput.min = '0'; pctInput.max = '100';
+    pctInput.className = 'pago-pct'; pctInput.placeholder = '%';
+    pctInput.value = pct || '';
+
+    var sym = document.createElement('span');
+    sym.className = 'pct-sym'; sym.textContent = '%';
+
+    var descInput = document.createElement('input');
+    descInput.type = 'text'; descInput.className = 'pago-desc';
+    descInput.placeholder = 'Descripción del hito de pago';
+    descInput.value = desc || '';
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'pago-del'; delBtn.title = 'Eliminar'; delBtn.innerHTML = '&times;';
+    (function (capturedPid) {
+      delBtn.addEventListener('click', function () {
+        var el = getEl('pago-' + capturedPid);
+        if (el) el.parentNode.removeChild(el);
+      });
+    })(pid);
+
+    div.appendChild(pctInput); div.appendChild(sym);
+    div.appendChild(descInput); div.appendChild(delBtn);
+    container.appendChild(div);
+  }
+
+  /* ── LIMPIAR ── */
+  function limpiarFormulario() {
+    if (!confirm('¿Limpiar todas las líneas, capítulos y datos del cliente?')) return;
+    getEl('tabla-body').innerHTML = '';
+    getEl('pagos-rows').innerHTML = '';
+    rowId = 0; chapterId = 0; pagoId = 0;
+    addChapter('');
+    addRow(1); addRow(1); addRow(1);
+    addPago('30', 'A la firma del contrato');
+    addPago('40', 'A mitad de obra');
+    addPago('30', 'A la entrega y recepción de la obra');
+    calcularTotales();
+  }
+
+  /* ── MODAL CARGAR JSON ── */
+  function abrirModalJSON() {
+    getEl('json-error').classList.remove('visible');
+    getEl('json-error').textContent = '';
+    getEl('json-modal').style.display = 'flex';
+    setTimeout(function () { getEl('json-input').focus(); }, 50);
+  }
+
+  function cerrarModalJSON() {
+    getEl('json-modal').style.display = 'none';
+  }
+
+  function aplicarJSON() {
+    var raw = getEl('json-input').value.trim();
+    var errEl = getEl('json-error');
+    errEl.classList.remove('visible');
+
+    if (!raw) {
+      errEl.textContent = 'El JSON está vacío. Pega aquí los datos.';
+      errEl.classList.add('visible');
+      return;
+    }
+
+    var data;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      errEl.textContent = 'JSON inválido: ' + err.message;
+      errEl.classList.add('visible');
+      return;
+    }
+
+    if (!data.capitulos || !Array.isArray(data.capitulos)) {
+      errEl.textContent = 'El JSON debe contener un array "capitulos".';
+      errEl.classList.add('visible');
+      return;
+    }
+
+    if (data.capitulos.length === 0) {
+      errEl.textContent = 'El array "capitulos" está vacío.';
+      errEl.classList.add('visible');
+      return;
+    }
+
+    // Validar estructura básica antes de aplicar
+    for (var i = 0; i < data.capitulos.length; i++) {
+      var cap = data.capitulos[i];
+      if (typeof cap !== 'object' || cap === null) {
+        errEl.textContent = 'El capítulo ' + (i + 1) + ' no tiene formato válido.';
+        errEl.classList.add('visible');
+        return;
+      }
+      if (cap.lineas && !Array.isArray(cap.lineas)) {
+        errEl.textContent = 'Las líneas del capítulo ' + (i + 1) + ' deben ser un array.';
+        errEl.classList.add('visible');
+        return;
+      }
+    }
+
+    // Limpiar tabla actual y cargar los nuevos capítulos
+    getEl('tabla-body').innerHTML = '';
+    rowId = 0; chapterId = 0;
+
+    data.capitulos.forEach(function (cap) {
+      var titulo = cap.titulo || '';
+      addChapter(titulo);
+      var cid = chapterId; // ID del capítulo recién creado
+
+      if (cap.lineas && Array.isArray(cap.lineas)) {
+        cap.lineas.forEach(function (linea) {
+          addRow(cid);
+          var id = rowId; // ID de la línea recién creada
+
+          if (linea.cantidad !== undefined && linea.cantidad !== null && linea.cantidad !== '') {
+            var qtyEl = getEl('qty-' + id);
+            if (qtyEl) qtyEl.value = linea.cantidad;
+          }
+          if (linea.unidad) {
+            var unitEl = getEl('unit-' + id);
+            if (unitEl) unitEl.value = linea.unidad;
+          }
+          if (linea.concepto) {
+            var concEl = getEl('concepto-' + id);
+            if (concEl) concEl.value = linea.concepto;
+          }
+          if (linea.precio !== undefined && linea.precio !== null && linea.precio !== '') {
+            var preEl = getEl('precio-' + id);
+            if (preEl) preEl.value = linea.precio;
+          }
+          if (linea.descuento !== undefined && linea.descuento !== null && linea.descuento !== '') {
+            var dtoEl = getEl('dto-' + id);
+            if (dtoEl) dtoEl.value = linea.descuento;
+          }
+
+          calcularFila(id);
+        });
+      }
+    });
+
+    calcularTotales();
+    cerrarModalJSON();
+    getEl('json-input').value = '';
+  }
+
+})();
+</script>
+</body>
+</html>
